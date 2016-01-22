@@ -26,7 +26,7 @@ def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descri
     :param cell_line_column: clumn of cell line
     :return: a cell line named descritor with values
     """
-    inp=oepn(descriptorfile)
+    inp = open(descriptorfile)
     header = inp.readline()
     header = header.split(separator)
     k=0
@@ -35,15 +35,21 @@ def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descri
         if k>gene_column_start:
             gene_column_dico[header[k]] = k
         k = k+1
+    failures=set()
     for line in inp:
         line = line.split(separator)
-        out = open(line[cell_line_column]+descriptortype+".celist")
+        out = open("/home/dm729/PycharmProjects/Graph_similarity_measures/"+line[cell_line_column]+descriptortype+".celist","wb")
         for gene in gene_column_dico:
-            for upid in gene_name_uniprot_library[gene]:
-                out.write(upid)
-                out.write("\t")
-                out.write(str(line[gene_column_dico[gene]]))
+            try:
+                for upid in gene_name_uniprot_library[gene]:
+                    out.write(upid)
+                    out.write("\t")
+                    out.write(str(line[gene_column_dico[gene]])+"\n")
+            except:
+                failures.add(gene)
+
         out.close()
+    print len(failures), failures
 
 
 def import_nodes(file_name,sep,default_weight, header):
@@ -147,10 +153,36 @@ def outwirte(outgraf, file_name, sep):
         out.write(vertex['name']+"\t"+str(vertex["Reach"])+"\n")
     out.close()
 
+def read_uniprot_dictionarry(up_file,sep,reviewed_col):
+    """
+    REads uniprot file to make gene name to uniprot ID
+    :param up_file: uniprot file
+    :param sep: sepoarator as in the downloaded file
+    :param reviewed_col: place of the reviewed col
+    :return: gene_name_up_dic: gene_name set(upid)
+    """
+    inp=open(up_file)
+    gene_name_up_dic = {}
+    for line in inp:
+        line = line.split(sep)
+        if line[reviewed_col]== "reviewed":
+            if line[0] not in gene_name_up_dic:
+                gene_name_up_dic[line[0]] = set()
+                gene_name_up_dic[line[0]].add(line[1])
+            else:
+                gene_name_up_dic[line[0]].add(line[1])
+    return gene_name_up_dic
+
 #Running commands
+gene_name_uniprot_library = read_uniprot_dictionarry("/home/dm729/PycharmProjects/Graph_similarity_measures/gene_names_uniprot.tab", "\t", 3)
+create_node_weight_file_from_gen_descritor(gene_name_uniprot_library,
+                                           "/home/dm729/PycharmProjects/Graph_similarity_measures/cell_line_gene_distance_fingerprints.csv", ",",
+                                           1,2,"cell_line_strength")
+"""
 a = open("/home/dm729/PycharmProjects/Graph_similarity_measures/sample.csv")
 id_weights = import_nodes("/home/dm729/PycharmProjects/Graph_similarity_measures/sample_weights","\t",0, 0)
 G = igraph.Graph.Read_Ncol(open("/home/dm729/PycharmProjects/Graph_similarity_measures/sample.csv","rb"),names=True, weights="if_present", directed=True)
 G = giancomponenet(G)
 G = relatedness_count(G, id_weights, 2, 3)
 outwirte(G, "/home/dm729/PycharmProjects/Graph_similarity_measures/sample_out.txt", "\t")
+"""
