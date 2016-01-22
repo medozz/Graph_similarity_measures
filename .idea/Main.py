@@ -14,6 +14,36 @@ Output:
 The script will give you a particular matrix of similarity between two graph, where the nodes are related.
 """
 
+def import_nodes(file_name,separator,default_weight, header):
+    """
+    :param file_name: imported file name
+    :param separator: separator of the import file
+    :param default_weight: 0 if there is no default wheight and use the files wheights
+    :param header: if true there is a header, if false there is no header
+    :return: id_wieght list of tuples with string id and float weight pairs
+    """
+    id_weight = []
+    inp = open(file_name)
+    if header == True:
+        header = inp.readline()
+    for line in inp:
+        line = line.split(sep)
+        if len(line) > 1 and default_weight==0:
+            id_weight.append((str(line[0]),float(line[1])))
+        elif float(default_weight) > 0:
+            id_weight.append((str(line[0]),float(line[1])))
+        else:
+            id_weight.append((str(line[0]),1.0))
+    return id_weight
+
+
+
+
+
+
+
+
+
 def giancomponenet(G):
     '''
     Simple function. Makes form a graph a giant componenet graph.
