@@ -29,19 +29,15 @@ def string_eater(string_file):
     for line in inp:
         line=line.split(" ")
         if int(line[7]) >0 or int(line[6])>0:
-            a = string.replace(line[0], "9606.", "")
-            b = string.replace(line[1], "9606.", "")
+            #a = string.replace(line[0], "9606.", "")
+            #b = string.replace(line[1], "9606.", "")
+            a = line[0]
+            b = line[1]
             string_identifiers.add(a)
             string_identifiers.add(b)
     return string_identifiers
 
 
-#nameset=search_for_gene_names(0, "/home/dm729/PycharmProjects/Graph_similarity_measures/cellline_disease_inference_fingerprints.csv", ",")
-#nameset=search_for_gene_names(nameset, "/home/dm729/PycharmProjects/Graph_similarity_measures/cell_line_gene_distance_fingerprints.csv", ",")
-
-out_file="/home/dm729/PycharmProjects/Graph_similarity_measures/string_ENSP.txt"
-
-#nameset=string_eater("/home/dm729/PycharmProjects/Graph_similarity_measures/9606.protein.links.detailed.v10.txt")
 def outwrite_names(nameset, out_file):
     out=open(out_file,"wb")
     for a in nameset:
@@ -49,22 +45,26 @@ def outwrite_names(nameset, out_file):
         out.write("\n")
     out.close()
 
+
+
 def string_writer(string_file, uniprot_translation):
     uniprot_inp=open(uniprot_translation)
     ENSP_to_UP = {}
     for line in uniprot_inp:
         line=line.split("\t")
-        if line[0] not in ENSP_to_UP:
-            ENSP_to_UP[line[0]] = set()
-            ENSP_to_UP[line[0]].add(line[1])
-        else:
-            ENSP_to_UP[line[0]].add(line[1])
+        for enspid in line[0].split(","):
+            if enspid not in ENSP_to_UP:
+                ENSP_to_UP[enspid] = set()
+                ENSP_to_UP[enspid].add(line[1])
+            else:
+                ENSP_to_UP[enspid].add(line[1])
     print "ENSP TO UP in memory"
     print len(ENSP_to_UP)
     inp=open(string_file,"rb")
     out=open("/home/dm729/PycharmProjects/Graph_similarity_measures/UP_string_2016_01_22.ncol","wb")
     inp.readline()
     failure=set()
+    edges=set()
     for line in inp:
         line=line.split(" ")
         if int(line[7]) >0 or int(line[6])>0:
@@ -75,19 +75,23 @@ def string_writer(string_file, uniprot_translation):
                 for up1 in ENSP_to_UP[a]:
                     try:
                         for up2 in ENSP_to_UP[b]:
-                            out.write(up1+" "+up2+"\n")
+                            edges.add(up1+" "+up2)
                     except:
                         failure.add(b)
             except:
                 failure.add(a)
+    out2=open("/home/dm729/PycharmProjects/Graph_similarity_measures/no_UP_STRING.txt","wb")
+    for fail in failure:
+        out2.write (fail+"\n")
     print failure
     print len(failure)
-
+    for edge in edges:
+        out.write(edge+"\n")
+    out2.close()
     out.close()
 
 
-string_writer("/home/dm729/PycharmProjects/Graph_similarity_measures/9606.protein.links.detailed.v10.txt",
-              "/home/dm729/PycharmProjects/Graph_similarity_measures/STRING_ENSP_UNIPROT.tab")
+
 """
 def reactome_eater(reactomefile, outfile):
     inp = open(reactomefile)
@@ -108,3 +112,15 @@ def reactome_eater(reactomefile, outfile):
 reactome_eater("/home/dm729/PycharmProjects/Graph_similarity_measures/homo_sapiens.interactions.txt",
                "/home/dm729/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22.ncol")
 """
+
+#nameset=search_for_gene_names(0, "/home/dm729/PycharmProjects/Graph_similarity_measures/cellline_disease_inference_fingerprints.csv", ",")
+#nameset=search_for_gene_names(nameset, "/home/dm729/PycharmProjects/Graph_similarity_measures/cell_line_gene_distance_fingerprints.csv", ",")
+
+#string_writer("/home/dm729/PycharmProjects/Graph_similarity_measures/9606.protein.links.detailed.v10.txt",
+#              "/home/dm729/PycharmProjects/Graph_similarity_measures/STRING_ENSP_UNIPROT.tab")
+
+out_file="/home/dm729/PycharmProjects/Graph_similarity_measures/string_string_ids.txt"
+
+nameset=string_eater("/home/dm729/PycharmProjects/Graph_similarity_measures/9606.protein.links.detailed.v10.txt")
+
+outwrite_names(nameset,outfile)
