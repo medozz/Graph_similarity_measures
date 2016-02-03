@@ -2,7 +2,7 @@
 import igraph
 import scipy
 import numpy as np
-
+import time
 """
 Description:
 The following script will bring a graph similarity matrixs bsed on particular nodes and there selected neighbours.
@@ -129,8 +129,11 @@ def relatedness_count(ourgraf,id_weight,neighborhood_number, propagation_type):
     Weigt propagation is not changable jet. Curently used the function as 2^-n*(income weight)
     Later can be used the edge weight of the particular graph, or thinking about different function.
     """
+    a=float(time.clock())
     related=[]
     FN=0
+    counter=0
+    all_sources = len(id_weight)
     ourgraf.vs["Reach"]=0
     for vertex in ourgraf.vs:
         if vertex['name'] in id_weight:
@@ -138,11 +141,16 @@ def relatedness_count(ourgraf,id_weight,neighborhood_number, propagation_type):
             used_vertexes=[vertex]
             neighbor_vertexes=[vertex]
             k=0
+            counter = counter+1
             while k<neighborhood_number:
                 infromation = id_weight[vertex['name']]*(2**(-k))
                 used_vertexes, neighbor_vertexes=neighbors_flow_propagation(neighbor_vertexes, infromation,
                                                                             used_vertexes, propagation_type)
                 k=k+1
+            if counter%100==0:
+                print "From", all_sources, 100*counter/all_sources, "%"
+                b=float(time.clock())
+                print b-a
     return ourgraf
 
 
@@ -152,6 +160,31 @@ def outwirte(outgraf, file_name, sep):
     for vertex in outgraf.vs:
         out.write(vertex['name']+"\t"+str(vertex["Reach"])+"\n")
     out.close()
+
+def chip_annotation_1_to_chip_annotation_2(chip_annotation_file, id1_col, id2_col):
+    """
+    Reads in an Affymetrix chip annotation file from GEO and gives a dictionarry, which contains id1: set(id2s)
+    The affymetrix files almost any properties are hardcoded, like the separators between and within columns.
+    :param chip_annotation_file: Affymetrix annoatation file of the chip
+    :param id1_col: source column
+    :param id2_col: target identifier column
+    :return: id1 to set(id2s) dictionarry
+    """
+    inp = open(chip_annotation_file)
+    gene_name_to_uniprot_dictionarry={}
+    for line in inp:
+        if line[0] != "#":
+            line = line.split("\t")
+            for id1 in line[id1_col].split(" /// "):
+                if id1 in gene_name_to_uniprot_dictionarry:
+                     for id2 in line[id2_col].split(" /// "):
+                         gene_name_to_uniprot_dictionarry[id1].add(id2)
+                else:
+                    gene_name_to_uniprot_dictionarry[id1]=set()
+                    for id2 in line[id2_col].split(" /// "):
+                         gene_name_to_uniprot_dictionarry[id1].add(id2)
+    return gene_name_to_uniprot_dictionarry
+
 
 def read_uniprot_dictionarry(up_file,sep,reviewed_col):
     """
@@ -174,15 +207,28 @@ def read_uniprot_dictionarry(up_file,sep,reviewed_col):
     return gene_name_up_dic
 
 #Running commands
-gene_name_uniprot_library = read_uniprot_dictionarry("/home/dm729/PycharmProjects/Graph_similarity_measures/gene_names_uniprot.tab", "\t", 3)
+
+gene_name_uniprot_library = chip_annotation_1_to_chip_annotation_2("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/GPL13667-15572_annotation.csv", "\t", 3)
 create_node_weight_file_from_gen_descritor(gene_name_uniprot_library,
                                            "/home/dm729/PycharmProjects/Graph_similarity_measures/cell_line_gene_distance_fingerprints.csv", ",",
-                                           1,2,"cell_line_strength")
-"""
-a = open("/home/dm729/PycharmProjects/Graph_similarity_measures/sample.csv")
-id_weights = import_nodes("/home/dm729/PycharmProjects/Graph_similarity_measures/sample_weights","\t",0, 0)
-G = igraph.Graph.Read_Ncol(open("/home/dm729/PycharmProjects/Graph_similarity_measures/sample.csv","rb"),names=True, weights="if_present", directed=True)
+                                           1,2,"cell_line_strength_new_translation")
+
+a=float(time.clock())
+graph = open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol")
+id_weights = import_nodes("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/NCI-SNU-16cell_line_strength_new_translation.celist","\t",0, 0)
+G = igraph.Graph.Read_Ncol(open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol","rb"),names=True, weights="if_present", directed=True)
 G = giancomponenet(G)
-G = relatedness_count(G, id_weights, 2, 3)
-outwirte(G, "/home/dm729/PycharmProjects/Graph_similarity_measures/sample_out.txt", "\t")
-"""
+G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
+outwirte(G, "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_NCI-SNU-16cell_line.celdesc", "\t")
+b=time.clock()
+print " New upit translation, Time ellpased since start:", b-a
+
+a=float(time.clock())
+graph = open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol")
+id_weights = import_nodes("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/NCI-SNU-16cell_line_strength.celist","\t",0, 0)
+G = igraph.Graph.Read_Ncol(open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol","rb"),names=True, weights="if_present", directed=True)
+G = giancomponenet(G)
+G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
+outwirte(G, "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_NCI-SNU-16cell_line.celdesc", "\t")
+b=time.clock()
+print "Time ellpased since start:", b-a
