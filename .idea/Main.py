@@ -128,9 +128,10 @@ def relatedness_count(ourgraf,id_weight,neighborhood_number, propagation_type):
 
     Weigt propagation is not changable jet. Curently used the function as 2^-n*(income weight)
     Later can be used the edge weight of the particular graph, or thinking about different function.
+    Weights should be positive numbers. Negative numbers are not meaningful in this context. To use
+    negative numbers the graph should be directed.
     """
     a=float(time.clock())
-    related=[]
     FN=0
     counter=0
     all_sources = len(id_weight)
@@ -143,12 +144,12 @@ def relatedness_count(ourgraf,id_weight,neighborhood_number, propagation_type):
             k=0
             counter = counter+1
             while k<neighborhood_number:
-                infromation = id_weight[vertex['name']]*(2**(-k))
+                infromation = abs(id_weight[vertex['name']])*(2**(-k))
                 used_vertexes, neighbor_vertexes=neighbors_flow_propagation(neighbor_vertexes, infromation,
                                                                             used_vertexes, propagation_type)
                 k=k+1
             if counter%100==0:
-                print "From", all_sources, 100*counter/all_sources, "%"
+                print "From", all_sources, "in the graph",100*counter/all_sources, "%"
                 b=float(time.clock())
                 print b-a
     return ourgraf
@@ -208,7 +209,7 @@ def read_uniprot_dictionarry(up_file,sep,reviewed_col):
 
 #Running commands
 
-gene_name_uniprot_library = chip_annotation_1_to_chip_annotation_2("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/GPL13667-15572_annotation.csv", "\t", 3)
+gene_name_uniprot_library = chip_annotation_1_to_chip_annotation_2("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/GPL13667-15572_annotation.csv", 14, 21)
 create_node_weight_file_from_gen_descritor(gene_name_uniprot_library,
                                            "/home/dm729/PycharmProjects/Graph_similarity_measures/cell_line_gene_distance_fingerprints.csv", ",",
                                            1,2,"cell_line_strength_new_translation")
