@@ -1,8 +1,10 @@
 "Author: Dezso Modos"
-import igraph
+#import igraph
 import scipy
 import numpy as np
 import time
+import os
+import re
 """
 Description:
 The following script will bring a graph similarity matrixs bsed on particular nodes and there selected neighbours.
@@ -17,7 +19,7 @@ propagation is used. For weights the different expression changes, methylations 
 dreiver mutations used.
 """
 def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descriptorfile, separator, cell_line_column,
-                                               gene_column_start, descriptortype):
+                                               gene_column_start, descriptortype, folder):
     """
     This function reads in a gene based descritor and forms a specific format for further annotation
     :param gene_name_uniprot_library: dictionarry for gene name to set(uniprot_id) - I can not be sure about this
@@ -38,7 +40,7 @@ def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descri
     failures=set()
     for line in inp:
         line = line.split(separator)
-        out = open("/home/dm729/PycharmProjects/Graph_similarity_measures/"+line[cell_line_column]+descriptortype+".celist","wb")
+        out = open(folder+line[cell_line_column]+descriptortype+".celist","wb")
         for gene in gene_column_dico:
             try:
                 for upid in gene_name_uniprot_library[gene]:
@@ -162,7 +164,7 @@ def outwirte(outgraf, file_name, sep):
         out.write(vertex['name']+"\t"+str(vertex["Reach"])+"\n")
     out.close()
 
-def chip_annotation_1_to_chip_annotation_2(chip_annotation_file, id1_col, id2_col):
+def chip_annotation_1_to_chip_annotation_2(chip_annotation_file, id1_col, id2_col, swissprott_uniprot_ids):
     """
     Reads in an Affymetrix chip annotation file from GEO and gives a dictionarry, which contains id1: set(id2s)
     The affymetrix files almost any properties are hardcoded, like the separators between and within columns.
@@ -183,7 +185,8 @@ def chip_annotation_1_to_chip_annotation_2(chip_annotation_file, id1_col, id2_co
                 else:
                     gene_name_to_uniprot_dictionarry[id1]=set()
                     for id2 in line[id2_col].split(" /// "):
-                         gene_name_to_uniprot_dictionarry[id1].add(id2)
+                        if id2 in swissprott_uniprot_ids:
+                            gene_name_to_uniprot_dictionarry[id1].add(id2)
     return gene_name_to_uniprot_dictionarry
 
 
@@ -207,29 +210,44 @@ def read_uniprot_dictionarry(up_file,sep,reviewed_col):
                 gene_name_up_dic[line[0]].add(line[1])
     return gene_name_up_dic
 
+
+def uniprotin(uniprotfile):
+    inp = open(uniprotfile)
+    inp.readline()
+    SwissProtUniProtIds=set()
+    for line in inp:
+        line=line.split("\t")
+        SwissProtUniProtIds.add(line[0])
+    return SwissProtUniProtIds
+
+
 #Running commands
+folder = "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/run/"
+SwissProtUniProtIds=uniprotin(folder+"uniprot-homo+sapiens.tab")
 
-gene_name_uniprot_library = chip_annotation_1_to_chip_annotation_2("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/GPL13667-15572_annotation.csv", 14, 21)
+gene_name_uniprot_library = chip_annotation_1_to_chip_annotation_2(folder+"GPL13667-15572_annotation.csv", 14, 21, SwissProtUniProtIds)
 create_node_weight_file_from_gen_descritor(gene_name_uniprot_library,
-                                           "/home/dm729/PycharmProjects/Graph_similarity_measures/cell_line_gene_distance_fingerprints.csv", ",",
-                                           1,2,"cell_line_strength_new_translation")
+                                           folder+"cell_line_gene_distance_fingerprints.csv", ",",
+                                           1,2,"cell_line_gene_distance_affy_translation_only_SP", folder)
+
+
+results = []
+for each in  os.listdir(folder):
+    print each
+    if each.endswith(".celist"):
+         results += [each]
+print "results:", results
+
+
+
 
 a=float(time.clock())
-graph = open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol")
-id_weights = import_nodes("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/NCI-SNU-16cell_line_strength_new_translation.celist","\t",0, 0)
-G = igraph.Graph.Read_Ncol(open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol","rb"),names=True, weights="if_present", directed=True)
-G = giancomponenet(G)
-G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
-outwirte(G, "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_NCI-SNU-16cell_line.celdesc", "\t")
-b=time.clock()
-print " New upit translation, Time ellpased since start:", b-a
-
-a=float(time.clock())
-graph = open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol")
-id_weights = import_nodes("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/NCI-SNU-16cell_line_strength.celist","\t",0, 0)
-G = igraph.Graph.Read_Ncol(open("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol","rb"),names=True, weights="if_present", directed=True)
-G = giancomponenet(G)
-G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
-outwirte(G, "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_NCI-SNU-16cell_line.celdesc", "\t")
-b=time.clock()
-print "Time ellpased since start:", b-a
+graph = open(folder+"Reactome_2016_01_22_onlySP.ncol")
+for cell_line in results:
+    id_weights = import_nodes(folder+cell_line,"\t",0, 0)
+    G = igraph.Graph.Read_Ncol(graph,names=True, weights="if_present", directed=True)
+    G = giancomponenet(G)
+    G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
+    outwirte(G, string.replace(folder+cell_line,".celist","Reactome_no_backward_propagation.celdesc"), "\t")
+    b=time.clock()
+    print "Cell line completed:", results, "Time ellapsed since start:" , (b-a)/60 ,"minutes"
