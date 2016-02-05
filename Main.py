@@ -74,7 +74,7 @@ def import_nodes(file_name, sep, default_weight, header):
     for line in inp:
         line = line.split(sep)
         if len(line) > 1 and default_weight==0:
-            id_weight[str(line[0])] = float(line[1])
+            id_weight[str(line[0])] = abs(float(line[1]))
         elif float(default_weight) > 0:
             id_weight[str(line[0])] = float(default_weight)
         else:
@@ -109,15 +109,15 @@ def neighbors_flow_propagation(vertexes, information, used_vertexes, type_):
     if type_==3:
         used_vertexes = []
     for vertex in vertexes:
-        neighbors_of_vertex=vertex.neighbors()
+        neighbors_of_vertex = vertex.neighbors()
         for one in neighbors_of_vertex:
             if one not in used_vertexes:
-                one["Reach"]= one["Reach"]+information*0.5
+                one["Reach"] = one["Reach"]+information*0.5
             if one not in neighbor_vertexes:
                 neighbor_vertexes.append(one)
-            if type_==1:
+            if type_ == 1:
                 used_vertexes.append(one)
-        if type_==2:
+        if type_ == 2:
             for vertex in neighbors_of_vertex:
                 used_vertexes.append(vertex)
     return used_vertexes, neighbor_vertexes
