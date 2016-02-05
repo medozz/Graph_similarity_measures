@@ -1,10 +1,12 @@
 "Author: Dezso Modos"
-#import igraph
+import igraph
 import scipy
 import numpy as np
 import time
 import os
 import re
+import string
+
 """
 Description:
 The following script will bring a graph similarity matrixs bsed on particular nodes and there selected neighbours.
@@ -17,6 +19,7 @@ The script will give you a particular matrix of similarity between two graph, wh
 According to Krishnaq the inputs will be weighted, but kept as simple as possible, so no back propagation and forward
 propagation is used. For weights the different expression changes, methylations are used. For mutations  only the
 dreiver mutations used.
+The script only uses the giant componenet of the graph.
 """
 def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descriptorfile, separator, cell_line_column,
                                                gene_column_start, descriptortype, folder):
@@ -33,6 +36,7 @@ def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descri
     header = header.split(separator)
     k=0
     gene_column_dico={}
+    log=open(folder+descriptortype+"_cellist_making_log.log", "wb")
     while k<len(header):
         if k>gene_column_start:
             gene_column_dico[header[k]] = k
@@ -51,7 +55,8 @@ def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descri
                 failures.add(gene)
 
         out.close()
-    print len(failures), failures
+    log.write("\n"+str(len(failures))+"\n"+" ".join(failures))
+    log.close()
 
 
 def import_nodes(file_name,sep,default_weight, header):
