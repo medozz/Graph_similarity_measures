@@ -323,7 +323,6 @@ gene_name_uniprot_library=""
 print len(expressions), len(results), len (trues)
 for a in not_trues:
     print a
-
 #print gene_name_uniprot_library
 
 a=float(time.clock())
