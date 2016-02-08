@@ -29,9 +29,14 @@ def nodest_from_exp_file(exp_file, gene_name_to_uniprot):
         gene_name_nodeset.add(line.strip())
     inp.close()
     up_node_set = set()
+    no_uniprot=set()
     for node in gene_name_nodeset:
-        for upid in gene_name_to_uniprot[node]:
-            up_node_set.add(upid)
+        if node in gene_name_to_uniprot:
+            for upid in gene_name_to_uniprot[node]:
+                up_node_set.add(upid)
+        else:
+            no_uniprot.add(node)
+    print "no_uniprot id:" , len(no_uniprot)
     return up_node_set
 
 
@@ -45,15 +50,19 @@ def prepare_graph(nodeset, graph_ncol, cell_line_graph):
     """
     inp = open(graph_ncol)
     outedges=set()
-    for edge in graph_ncol:
+    for edge in inp:
         edge = edge.split(" ")
-        if edge[0].strip() and edge[1].strip() in nodeset:
-            outedges.add(" ".join(edge).strip())
+        try:
+            #print edge[0], edge[1]
+            if edge[0].strip() in nodeset and edge[1].strip() in nodeset:
+                outedges.add(" ".join(edge).strip())
+        except:
+            print "This edge has problems:", edge
     inp.close()
 
     out = open(cell_line_graph, "wb")
     for edge in outedges:
-        out.write(edge)+"\n"
+        out.write(edge+"\n")
     out.close()
 
 
@@ -282,7 +291,7 @@ results = []
 for each in  os.listdir(folder):
     if each.endswith(".celist"):
          results += [each]
-print "results:", results
+print "results:", len(results)
 
 expressions=[]
 for each in  os.listdir(folder):
@@ -298,25 +307,29 @@ for each in expressions:
     else:
         not_trues.append((each, each2))
 """
+
+
 def graph_from_expression_file_graph(expression_file, graph_file, GENE_name_uniprot):
     expression_set=nodest_from_exp_file(expression_file, GENE_name_uniprot)
-
-    prepare_graph(expression_set,graph_file,expression_file.reaplace("expr", "ncol"))
-    id_weights = import_nodes(folder+cell_line,"\t",0, 0)
-    expression_graph_file = open(expression_file.reaplace("expr", "ncol"))
+    print graph_file
+    prepare_graph(expression_set, graph_file, expression_file.replace("expr", "ncol"))
+    cell_line = expression_file.replace("_SD.expr", "cell_line_gene_distance_affy_translation_only_SP.celist")
+    id_weights = import_nodes(cell_line,"\t",0, 0)
+    expression_graph_file = open(expression_file.replace("expr", "ncol"))
     G = igraph.Graph.Read_Ncol(expression_graph_file,names=True, weights="if_present", directed=True)
     G = giancomponenet(G)
     G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
-    cell_line = expression_file.replace("_SD.expr", "cell_line_gene_distance_affy_translation_only_SP.celist")
-    outwirte(G, string.replace(folder+cell_line, ".celist", "Signor_no_backward_propagation_three_neighbor.celdesc"), "\t")
+    outwirte(G, string.replace(cell_line, ".celist", "Signor_no_backward_propagation_DE_second_neighbor.celdesc"), "\t")
     # Line above should be rewritten at any paramters run
 
 a=float(time.clock())
+
 for each in expressions:
     graph_from_expression_file_graph(folder+each, graph, gene_name_uniprot_library)
     b=time.clock()
     print "Cell line completed:", each, "Time ellapsed since start:", (b-a)/60, "minutes"
     print each, "done"
+
 print "Done :)"
 gene_name_uniprot_library=""
 """
