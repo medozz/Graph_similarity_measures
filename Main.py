@@ -119,7 +119,7 @@ def import_nodes(file_name, sep, default_weight, header):
     for line in inp:
         line = line.split(sep)
         if len(line) > 1 and default_weight==0:
-            id_weight[str(line[0])] = abs(float(line[1]))
+            id_weight[str(line[0]).strip()] = abs(float(line[1].strip()))
         elif float(default_weight) > 0:
             id_weight[str(line[0])] = float(default_weight)
         else:
@@ -313,13 +313,13 @@ def graph_from_expression_file_graph(expression_file, graph_file, GENE_name_unip
     expression_set=nodest_from_exp_file(expression_file, GENE_name_uniprot)
     print graph_file
     prepare_graph(expression_set, graph_file, expression_file.replace("expr", "ncol"))
-    cell_line = expression_file.replace("_SD.expr", "cell_line_gene_distance_affy_translation_only_SP.celist")
-    id_weights = import_nodes(cell_line,"\t",0, 0)
+    cell_line = expression_file.replace("_PT.expr", "cell_line_gene_distance_affy_translation_only_SP.celist")
+    id_weights = import_nodes(cell_line, "\t", 0, 1)
     expression_graph_file = open(expression_file.replace("expr", "ncol"))
     G = igraph.Graph.Read_Ncol(expression_graph_file,names=True, weights="if_present", directed=True)
     G = giancomponenet(G)
-    G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
-    outwirte(G, string.replace(cell_line, ".celist", "Signor_no_backward_propagation_DE_second_neighbor.celdesc"), "\t")
+    G = relatedness_count(G, id_weights, 3, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
+    outwirte(G, string.replace(cell_line, ".celist", "Signor_no_backward_propagation_DE_third_neighbor.celdesc"), "\t")
     # Line above should be rewritten at any paramters run
 
 a=float(time.clock())
