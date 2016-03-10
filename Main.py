@@ -276,6 +276,20 @@ def uniprotin(uniprotfile):
         SwissProtUniProtIds.add(line[0])
     return SwissProtUniProtIds
 
+def graph_from_expression_file_graph(expression_file, graph_file, GENE_name_uniprot,
+                                     neighborhood_number, propagation_type, expression_type):
+    expression_set = nodest_from_exp_file(expression_file, GENE_name_uniprot)
+    print graph_file
+    prepare_graph(expression_set, graph_file, expression_file.replace("expr", "ncol"))
+    cell_line = expression_file.replace("_"+expression_type+".expr", "cell_line_gene_distance_affy_translation_only_SP_"
+                                        +expression_type + ".celist")
+    id_weights = import_nodes(cell_line, "\t", 0, 1)
+    expression_graph_file = open(expression_file.replace("expr", "ncol"))
+    G = igraph.Graph.Read_Ncol(expression_graph_file, names=True, weights="if_present", directed=True)
+    G = giancomponenet(G)
+    G = relatedness_count(G, id_weights, neighborhood_number, propagation_type) #according to Krishna Neighborhood will be 2 propagation type will be 1
+    outwirte(G, string.replace(cell_line, ".celist", (str(neighborhood_number)+"_neighbourhood"+str(propagation_type)+"_propagation"
+                                                      +graph_file.replace(".ncol","")+".celdesc")), "\t")
 
 #Running commands
 
@@ -290,7 +304,7 @@ create_node_weight_file_from_gene_descriptor(gene_name_uniprot_library,
                                            folder+"cell_line_gene_distance_fingerprints.csv", ",",
                                            1, 2, "cell_line_gene_distance_affy_translation_only_SP", folder)
 
-"""
+
 results = []
 for each in  os.listdir(folder):
     if each.endswith(".celist"):
@@ -314,32 +328,20 @@ for each in expressions:
 print len(trues), len(expressions), len(results)
 print not_trues
 
-def graph_from_expression_file_graph(expression_file, graph_file, GENE_name_uniprot,
-                                     neighborhood_number, propagation_type):
-    expression_set = nodest_from_exp_file(expression_file, GENE_name_uniprot)
-    print graph_file
-    prepare_graph(expression_set, graph_file, expression_file.replace("expr", "ncol"))
-    cell_line = expression_file.replace("_SD.expr", "cell_line_gene_distance_affy_translation_only_SP.celist")
-    id_weights = import_nodes(cell_line, "\t", 0, 1)
-    expression_graph_file = open(expression_file.replace("expr", "ncol"))
-    G = igraph.Graph.Read_Ncol(expression_graph_file, names=True, weights="if_present", directed=True)
-    G = giancomponenet(G)
-    G = relatedness_count(G, id_weights, neighborhood_number, propagation_type) #according to Krishna Neighborhood will be 2 propagation type will be 1
-    outwirte(G, string.replace(cell_line, ".celist", (str(neighborhood_number)+"_neighbourhood"+str(propagation_type)+"_propagation"
-                                                      +graph_file.replace(".ncol","")+".celdesc")), "\t")
+
 
 
 a=float(time.clock())
 
 for each in expressions:
-    graph_from_expression_file_graph(folder+each, graph, gene_name_uniprot_library, 3, 1)
+    graph_from_expression_file_graph(folder+each, graph, gene_name_uniprot_library, 3, 1, "SD")
     b=time.clock()
     print "Cell line completed:", each, "Time ellapsed since start:", (b-a)/60, "minutes"
     print each, "done"
 
 print "Done :)"
 gene_name_uniprot_library=""
-"""
+
 print len(expressions), len(results), len (trues)
 for a in not_trues:
     print a

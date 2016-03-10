@@ -42,7 +42,7 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.grid_search import RandomizedSearchCV, GridSearchCV
 
 #Globals:
-graph = "ominpath.ncol"#used graph
+graph = "ominpath_whole.prn"#used graph
 folder = "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/" #used folder
 sample_file = "dan_combination_train_signalink_targets_and_neighbours.csv" # To make accoruate file format using this file
 Krishna_file = "cell_line_tissue_dictionary.txt" #Tissue translating if something is missing than this is
@@ -76,6 +76,12 @@ def run_through_expression(neigbourhood, propagation_type, expressions, expressi
     :param expressions: expression files containing list
     :return:
     """
+    dataset_type = 'test'
+    add_in = '_2'
+
+    input_dir = folder+'descriptorGeneration/descriptors_out/combinations/'
+    prefix = 'dan_' # leave as '' if no prefix
+    a = time.clock()
     for each in expressions:
         M.graph_from_expression_file_graph(folder+each, graph, gene_name_uniprot_library, neigbourhood, propagation_type,
                                            expression_type)
@@ -105,7 +111,7 @@ def run_through_expression(neigbourhood, propagation_type, expressions, expressi
     #"structural_fingerprints" : input_dir+prefix+'combination_'+dataset_type+add_in+'_structural_fingerprints.csv',
     #"matrix_fact":'descriptorGeneration/documents-export-2015-12-03/'+dataset_type+'_mat.csv',
     #"neighbours":'descriptorGeneration/documents-export-2015-12-03/'+dataset_type+'_neighbors.csv',
-    "gene":final_file_name,
+    "gene":folder+final_file_name,
     #"mut":'factors_mutations_50.csv',
     }
     perform_feature_selection = False#True
@@ -116,7 +122,7 @@ def run_through_expression(neigbourhood, propagation_type, expressions, expressi
     correlate_scores = False    # Slow - calculates distance between training and test data, and correlates this with difference in prediction of synergy.
     ############################################################################
 
-    X, y, IDs, number_of_structures, stratified_IDs, number_of_occurrences = getXy('train',challenge=2,fileNames)
+    X, y, IDs, number_of_structures, stratified_IDs, number_of_occurrences = getXy('train',fileNames, challenge=2)
 
     if perform_feature_selection == True:
         print "NOTE: FEATURE SELECTION NOT YET IMPLEMENTED IN FINAL MODEL SCRIPT"
