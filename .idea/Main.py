@@ -21,6 +21,44 @@ propagation is used. For weights the different expression changes, methylations 
 dreiver mutations used.
 The script only uses the giant componenet of the graph.
 """
+
+
+def nodest_from_exp_file(exp_file, gene_name_to_uniprot):
+    inp = open(nodes_in_file)
+    gene_name_nodeset=set()
+    for line in inp:
+        gene_name_nodeset.add(line.strip())
+    inp.close()
+    up_node_set = set()
+    for node in gene_name_nodeset:
+        for upid in gene_name_to_uniprot[node]:
+            up_node_set.add(upid)
+    return up_node_set
+
+
+def prepare_graph(nodeset, graph_ncol):
+    """
+    This function reads the graph ncol file and search wheteher the particular nodes expressions are presented, or not.
+    :param nodeset: the nodes ids in appropariate format (a set of ids)
+    :param graph_ncol: the import ncol graph
+    :return: it returns the porticular graph with the header of the inport file, but in ncol.
+    """
+
+
+    inp = open(graph_ncol)
+    outedges=set()
+    for edge in graph_ncol:
+        edge = edge.splquit()it(" ")
+        if edge[0].strip() and edge[1].strip() in nodeset:
+            outedges.add(" ".join(edge).strip())
+    inp.close()
+
+    out = open(nodes_in_file.replace(".expr", ".ncol"), "wb")
+    for edge in outedges:
+        out.write(edge)+"\n"
+    out.close()
+
+
 def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descriptorfile, separator, cell_line_column,
                                                gene_column_start, descriptortype, folder):
     """
@@ -138,8 +176,8 @@ def relatedness_count(ourgraf,id_weight,neighborhood_number, propagation_type):
     Weights should be positive numbers. Negative numbers are not meaningful in this context. To use
     negative numbers the graph should be directed.
     """
-    a=float(time.clock())
-    FN=0
+    #a=float(time.clock())
+    #FN=0
     counter=0
     all_sources = len(id_weight)
     ourgraf.vs["Reach"]=0
@@ -155,10 +193,13 @@ def relatedness_count(ourgraf,id_weight,neighborhood_number, propagation_type):
                 used_vertexes, neighbor_vertexes=neighbors_flow_propagation(neighbor_vertexes, infromation,
                                                                             used_vertexes, propagation_type)
                 k=k+1
+            """
             if counter%100==0:
                 print "From", all_sources, "in the graph",100*counter/all_sources, "%"
                 b=float(time.clock())
                 print b-a
+            """
+    print "The primarry uniprot IDS in the graph:", counter, "Percentage:", (float(counter)/float(all_sources))*100
     return ourgraf
 
 
@@ -245,14 +286,14 @@ print "results:", results
 
 
 
-
 a=float(time.clock())
 graph = open(folder+"Reactome_2016_01_22_onlySP.ncol")
 for cell_line in results:
+
     id_weights = import_nodes(folder+cell_line,"\t",0, 0)
     G = igraph.Graph.Read_Ncol(graph,names=True, weights="if_present", directed=True)
     G = giancomponenet(G)
     G = relatedness_count(G, id_weights, 2, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
     outwirte(G, string.replace(folder+cell_line,".celist","Reactome_no_backward_propagation.celdesc"), "\t")
     b=time.clock()
-    print "Cell line completed:", results, "Time ellapsed since start:" , (b-a)/60 ,"minutes"
+    print "Cell line completed:", cell_line, "Time ellapsed since start:", (b-a)/60, "minutes"

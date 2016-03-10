@@ -66,7 +66,7 @@ def prepare_graph(nodeset, graph_ncol, cell_line_graph):
     out.close()
 
 
-def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descriptorfile, separator, cell_line_column,
+def create_node_weight_file_from_gene_descriptor(gene_name_uniprot_library, descriptorfile, separator, cell_line_column,
                                                gene_column_start, descriptortype, folder):
     """
     This function reads in a gene based descritor and forms a specific format for further annotation
@@ -74,6 +74,9 @@ def create_node_weight_file_from_gen_descritor(gene_name_uniprot_library, descri
     :param descriptorfile: descriptorfile made by Krishna
     :param separator: the separator between the columns
     :param cell_line_column: clumn of cell line
+    :param gene_column_start
+    :param descriptortype: string name of the descriptortype
+    :param folder: folder of the descriptorfile
     :return: a cell line named descritor with values
     """
     inp = open(descriptorfile)
@@ -119,7 +122,7 @@ def import_nodes(file_name, sep, default_weight, header):
     for line in inp:
         line = line.split(sep)
         if len(line) > 1 and default_weight==0:
-            id_weight[str(line[0]).strip()] = abs(float(line[1].strip()))
+            id_weight[str(line[0])] = abs(float(line[1]))
         elif float(default_weight) > 0:
             id_weight[str(line[0])] = float(default_weight)
         else:
@@ -168,11 +171,11 @@ def neighbors_flow_propagation(vertexes, information, used_vertexes, type_):
     return used_vertexes, neighbor_vertexes
 
 
-def relatedness_count(ourgraf,id_weight,neighborhood_number, propagation_type):
+def relatedness_count(ourgraf, id_weight, neighborhood_number, propagation_type):
     """
     :param ourgraf: igraph graph file
     :param id_weight: id_weights from the funcition import_nodes
-    :param neighborhood_number int, tells how far4 should igraph chech the neighbors
+    :param neighborhood_number int, tells how far should igraph chek the neighbours
     :param propagation_type 1 if a vertex is reached from an oter one added to used vertexes
     2 add to used vertexes only the end of the cycle to prevent infomration backflow.
     3 not add to used vertexes, allow backword infomration flow
@@ -245,7 +248,7 @@ def chip_annotation_1_to_chip_annotation_2(chip_annotation_file, id1_col, id2_co
 
 def read_uniprot_dictionarry(up_file,sep,reviewed_col):
     """
-    REads uniprot file to make gene name to uniprot ID
+    Reads uniprot file to make gene name to uniprot ID
     :param up_file: uniprot file
     :param sep: sepoarator as in the downloaded file
     :param reviewed_col: place of the reviewed col
@@ -282,11 +285,12 @@ graph = folder+"Signor_2016_02_05.ncol"
 SwissProtUniProtIds=uniprotin(folder+"uniprot-homo+sapiens.tab")
 
 gene_name_uniprot_library = chip_annotation_1_to_chip_annotation_2(folder+"GPL13667-15572_annotation.csv", 14, 21, SwissProtUniProtIds)
-create_node_weight_file_from_gen_descritor(gene_name_uniprot_library,
+"""
+create_node_weight_file_from_gene_descriptor(gene_name_uniprot_library,
                                            folder+"cell_line_gene_distance_fingerprints.csv", ",",
                                            1, 2, "cell_line_gene_distance_affy_translation_only_SP", folder)
 
-
+"""
 results = []
 for each in  os.listdir(folder):
     if each.endswith(".celist"):
@@ -297,7 +301,7 @@ expressions=[]
 for each in  os.listdir(folder):
     if each.endswith("SD.expr"):
         expressions += [each]
-"""
+
 trues=[]
 not_trues=[]
 for each in expressions:
@@ -306,26 +310,29 @@ for each in expressions:
         trues.append(each2)
     else:
         not_trues.append((each, each2))
-"""
 
+print len(trues), len(expressions), len(results)
+print not_trues
 
-def graph_from_expression_file_graph(expression_file, graph_file, GENE_name_uniprot):
-    expression_set=nodest_from_exp_file(expression_file, GENE_name_uniprot)
+def graph_from_expression_file_graph(expression_file, graph_file, GENE_name_uniprot,
+                                     neighborhood_number, propagation_type):
+    expression_set = nodest_from_exp_file(expression_file, GENE_name_uniprot)
     print graph_file
     prepare_graph(expression_set, graph_file, expression_file.replace("expr", "ncol"))
-    cell_line = expression_file.replace("_PT.expr", "cell_line_gene_distance_affy_translation_only_SP.celist")
+    cell_line = expression_file.replace("_SD.expr", "cell_line_gene_distance_affy_translation_only_SP.celist")
     id_weights = import_nodes(cell_line, "\t", 0, 1)
     expression_graph_file = open(expression_file.replace("expr", "ncol"))
-    G = igraph.Graph.Read_Ncol(expression_graph_file,names=True, weights="if_present", directed=True)
+    G = igraph.Graph.Read_Ncol(expression_graph_file, names=True, weights="if_present", directed=True)
     G = giancomponenet(G)
-    G = relatedness_count(G, id_weights, 3, 1) #according to Krishna Neighborhood will be 2 propagation type will be 1
-    outwirte(G, string.replace(cell_line, ".celist", "Signor_no_backward_propagation_DE_third_neighbor.celdesc"), "\t")
-    # Line above should be rewritten at any paramters run
+    G = relatedness_count(G, id_weights, neighborhood_number, propagation_type) #according to Krishna Neighborhood will be 2 propagation type will be 1
+    outwirte(G, string.replace(cell_line, ".celist", (str(neighborhood_number)+"_neighbourhood"+str(propagation_type)+"_propagation"
+                                                      +graph_file.replace(".ncol","")+".celdesc")), "\t")
+
 
 a=float(time.clock())
 
 for each in expressions:
-    graph_from_expression_file_graph(folder+each, graph, gene_name_uniprot_library)
+    graph_from_expression_file_graph(folder+each, graph, gene_name_uniprot_library, 3, 1)
     b=time.clock()
     print "Cell line completed:", each, "Time ellapsed since start:", (b-a)/60, "minutes"
     print each, "done"

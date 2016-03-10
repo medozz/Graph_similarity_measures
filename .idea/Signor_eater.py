@@ -15,7 +15,7 @@ def signor_eater(signor_file, out_file):
         line = line.strip()
         line = line .split("\t")
         if line[1]=="PROTEIN" and line[5]=="PROTEIN":
-            edge = line[1]+" "+line[5]
+            edge = line[2]+" "+line[6]
             edges_set.add(edge)
     inp.close()
 

@@ -83,7 +83,7 @@ def string_writer(string_file, uniprot_translation, SwissProtUniProtIds, outfile
                         failure.add(b)
             except:
                 failure.add(a)
-    out2=open(outfile_no_ids,"wb") "/home/dm729/PycharmProjects/Graph_similarity_measures/no_UP_STRING.txt","wb")
+    out2=open(outfile_no_ids,"wb")
     for fail in failure:
         out2.write (fail+"\n")
     print failure
@@ -103,6 +103,30 @@ def uniprotin(uniprotfile):
     return SwissProtUniProtIds
 
 
+def chip_annotation_1_to_chip_annotation_2(chip_annotation_file, id1_col, id2_col):
+    """
+    Reads in an Affymetrix chip annotation file from GEO and gives a dictionarry, which contains id1: set(id2s)
+    The affymetrix files almost any properties are hardcoded, like the separators between and within columns.
+    :param chip_annotation_file: Affymetrix annoatation file of the chip
+    :param id1_col: source column
+    :param id2_col: target identifier column
+    :return: id1 to set(id2s) dictionarry
+    """
+    inp = open(chip_annotation_file)
+    gene_name_to_uniprot_dictionarry={}
+    for line in inp:
+        if line[0] != "#":
+            line = line.split("\t")
+            for id1 in line[id1_col].split(" /// "):
+                if id1 in gene_name_to_uniprot_dictionarry:
+                     for id2 in line[id2_col].split(" /// "):
+                         gene_name_to_uniprot_dictionarry[id1].add(id2)
+                else:
+                    gene_name_to_uniprot_dictionarry[id1]=set()
+                    for id2 in line[id2_col].split(" /// "):
+                         gene_name_to_uniprot_dictionarry[id1].add(id2)
+    return gene_name_to_uniprot_dictionarry
+
 
 def reactome_eater(reactomefile, outfile, SwissProtUniProtIds):
     inp = open(reactomefile)
@@ -117,20 +141,21 @@ def reactome_eater(reactomefile, outfile, SwissProtUniProtIds):
             all_reactions.add(interaction)
     out= open(outfile,"wb")
     for interaction in all_reactions:
-        print interaction
-        out.write(interaction)
+        #print interaction
+        out.write(interaction+"\n")
     out.close()
 
 SwissProtUniProtIds=uniprotin("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/uniprot-homo+sapiens.tab")
 
-reactome_eater("/home/dm729/PycharmProjects/Graph_similarity_measures/homo_sapiens.interactions.txt",
-               "/home/dm729/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22.ncol")
+reactome_eater("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/homo_sapiens.interactions.txt",
+               "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/Reactome_2016_01_22_onlySP.ncol",
+               SwissProtUniProtIds)
 
 #nameset=search_for_gene_names(0, "/home/dm729/PycharmProjects/Graph_similarity_measures/cellline_disease_inference_fingerprints.csv", ",")
 #nameset=search_for_gene_names(nameset, "/home/dm729/PycharmProjects/Graph_similarity_measures/cell_line_gene_distance_fingerprints.csv", ",")
-
-string_writer("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/homo_sapiens.interactions.txt"
-        "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/STRING_ID_TO_UP.tab",
+chip_annotation_1_to_chip_annotation_2
+string_writer("/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/9606.protein.links.detailed.v10.txt",
+              "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/STRING_ID_TO_UP.tab",
               SwissProtUniProtIds,
               "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/UP_string_only_SP_2016_01_25.ncol",
               "/home/dm729/ucc-fileserver/PycharmProjects/Graph_similarity_measures/no_UP_STRING_SP_2016_01_26.txt")
